@@ -2,17 +2,16 @@ using UnityEngine;
 using Mirror;
 using TMPro;
 
-[RequireComponent(typeof(DashSkill))]
 public class Player : NetworkBehaviour
 {
-	[SerializeField] private DashSkill skill;
 	[Tooltip("Display player name")]
 	[SerializeField] private TextMeshPro nameBoard;
-	[SerializeField]
-	[SyncVar(hook = nameof(OutputNameOnBoard))]
+	[SyncVar(hook = nameof(ChangeNameOnBoard))]
 	private string playerName;
-	[SyncVar] private int frags = 0;
+	[SyncVar(hook = nameof(ChangeFragsOnBoard))]
+	private int frags = 0;
 
+	private ISkill skill;
 	private IDamageHandler playerState;
 	private IMoveController moveController;
 	private PlayerSettings settings;
@@ -24,6 +23,8 @@ public class Player : NetworkBehaviour
 
 	private void OnValidate()
 	{
+		if (this.GetComponent<ISkill>() == null)
+			Debug.LogError("Error: Player dont find ISkill component.\n Add ISkill component");
 		if (this.GetComponent<IMoveController>() == null)
 			Debug.LogError("Error: Player dont find IMoveController component.\n Add IMoveController component");
 		if (this.GetComponent<IDamageHandler>() == null)
@@ -33,8 +34,7 @@ public class Player : NetworkBehaviour
 	void Start()
 	{
 		moveController = this.GetComponent<IMoveController>();
-		skill.OnAttackBegin += BlockMove;
-		skill.OnAttackEnd += UnblockMove;
+		skill = this.GetComponent<ISkill>();
 		skill.OnHittingEnemy += CmdHitEnemy;
 	}
 
@@ -48,19 +48,29 @@ public class Player : NetworkBehaviour
 	{
 		base.OnStartLocalPlayer();
 		settings = FindObjectOfType<PlayerSettings>();
-		CmdOutputNameOnBoard(settings.PlayerName);
-		nameBoard.gameObject.SetActive(false);
+		CmdSetName(settings.PlayerName);
 	}
 
-	private void OutputNameOnBoard(string oldName, string newName)
+	private void ChangeNameOnBoard(string oldName, string newName)
 	{
-		nameBoard.text = newName;
+		if (isLocalPlayer)
+			nameBoard.text = frags.ToString();
+		else
+			nameBoard.text = $"{newName}\n{frags}";
 	}
 
 	[Command]
-	public void CmdOutputNameOnBoard(string newName)
+	public void CmdSetName(string newName)
 	{
 		playerName = newName;
+	}
+
+	private void ChangeFragsOnBoard(int oldFrags, int newFrags)
+    {
+		if(isLocalPlayer)
+			nameBoard.text = newFrags.ToString();
+		else
+			nameBoard.text = $"{playerName}\n{newFrags}";
 	}
 
 	public void BlockMove()

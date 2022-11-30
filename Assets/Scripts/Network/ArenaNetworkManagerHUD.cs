@@ -47,7 +47,7 @@ public class ArenaNetworkManagerHUD : MonoBehaviour
 	{
 		if (!NetworkClient.active)
 		{
-			playerSettings.PlayerName = GUILayout.TextField(playerSettings.PlayerName);
+			playerSettings.PlayerName = GUILayout.TextField(playerSettings.PlayerName, 20);
 
 			if (Application.platform != RuntimePlatform.WebGLPlayer)
 			{

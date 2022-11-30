@@ -9,7 +9,8 @@ public class PlayerMoveController : NetworkBehaviour, IMoveController
 	[Header("Speed")]
 	[SerializeField] private float moveSpeed = 1;
 	[SerializeField] private float rotateSpeed = 1;
-	[SerializeField][SyncVar] private bool isMoveBlocked = false;
+	[SerializeField]
+	[SyncVar] private bool isMoveBlocked = false;
 	private Animator anim;
 
 	private CameraFollowPlayer followCamera;

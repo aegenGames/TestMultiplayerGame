@@ -2,8 +2,9 @@ using System.Collections;
 using UnityEngine;
 using Mirror;
 
-public class DashSkill : NetworkBehaviour
+public class DashSkill : NetworkBehaviour, ISkill
 {
+	[Header("Parameters of attack")]
 	[SerializeField] private float dashDistance = 3;
 	[Tooltip("Time for overcoming the full dash distance")]
 	[SerializeField] private float timeAction = 1;
@@ -26,15 +27,15 @@ public class DashSkill : NetworkBehaviour
 	private bool isCooldown = false;
 	private bool isAttacking = false;
 
+	private IMoveController moveController;
 	private CharacterController characterController;
 	private CapsuleCollider meshCollider;
 
-	public System.Action OnAttackBegin;
-	public System.Action OnAttackEnd;
-	public System.Action<GameObject> OnHittingEnemy;
+    public event ISkill.HitHandler OnHittingEnemy;
 
-	private void Start()
+    private void Start()
 	{
+		moveController = this.GetComponent<IMoveController>();
 		characterController = this.GetComponent<CharacterController>();
 		meshCollider = this.GetComponent<CapsuleCollider>();
 		dashAnimation.SetFloat("closingSpeed", 5 / timeAction);
@@ -50,8 +51,7 @@ public class DashSkill : NetworkBehaviour
 
 		if (dashAnimation)
 		{
-			dashAnimation.SetBool("startDash", true);
-			dashAnimation.SetBool("stopDash", false);
+			dashAnimation.SetBool("isDashing", true);
 		}
 		StartCoroutine(StartAttack());
 	}
@@ -91,8 +91,8 @@ public class DashSkill : NetworkBehaviour
 			yield break;
 
 		CmdChangeController(true);
+		moveController.IsMoveBlocked = true;
 
-		OnAttackBegin();
 		isCooldown = true;
 		isAttacking = true;
 		float deltaTime = Time.fixedDeltaTime;
@@ -112,13 +112,12 @@ public class DashSkill : NetworkBehaviour
 	{
 		if (dashAnimation)
 		{
-			dashAnimation.SetBool("stopDash", true);
-			dashAnimation.SetBool("startDash", false);
+			dashAnimation.SetBool("isDashing", false);
 		}
 
 		CmdChangeController(false);
+		moveController.IsMoveBlocked = false;
 
-		OnAttackEnd();
 		isAttacking = false;
 		yield return new WaitForSeconds(cooldown);
 		isCooldown = false;
